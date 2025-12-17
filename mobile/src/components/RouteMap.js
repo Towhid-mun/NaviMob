@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { colors } from '../theme/colors';
@@ -12,33 +12,49 @@ const DEFAULT_REGION = {
 
 export const RouteMap = ({ origin, destination, coordinates }) => {
   const mapRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
 
   const routeCoordinates = useMemo(() => {
     if (!coordinates?.length) return [];
     return coordinates.map(([longitude, latitude]) => ({ latitude, longitude }));
   }, [coordinates]);
 
-  useEffect(() => {
-    if (origin && mapRef.current) {
-      mapRef.current.animateCamera({ center: origin, zoom: 13 }, { duration: 600 });
+  const focusCoordinates = useMemo(() => {
+    if (routeCoordinates.length > 1) {
+      return routeCoordinates;
     }
-  }, [origin]);
+    const focus = [];
+    if (origin) focus.push(origin);
+    if (destination?.coords) focus.push(destination.coords);
+    return focus;
+  }, [routeCoordinates, origin, destination]);
 
   useEffect(() => {
-    if (routeCoordinates.length > 0 && mapRef.current) {
-      mapRef.current.fitToCoordinates(routeCoordinates, {
-        edgePadding: { top: 80, right: 40, bottom: 80, left: 40 },
-        animated: true,
-      });
+    if (!mapReady || !mapRef.current || focusCoordinates.length === 0) return;
+
+    if (focusCoordinates.length === 1) {
+      mapRef.current.animateCamera(
+        { center: focusCoordinates[0], zoom: 15 },
+        { duration: 600 },
+      );
+      return;
     }
-  }, [routeCoordinates]);
+
+    mapRef.current.fitToCoordinates(focusCoordinates, {
+      edgePadding: { top: 120, right: 60, bottom: 120, left: 60 },
+      animated: true,
+    });
+  }, [mapReady, focusCoordinates]);
 
   return (
     <View style={styles.container}>
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        initialRegion={origin ? { ...origin, latitudeDelta: 0.05, longitudeDelta: 0.05 } : DEFAULT_REGION}
+        initialRegion={
+          origin ? { ...origin, latitudeDelta: 0.05, longitudeDelta: 0.05 } : DEFAULT_REGION
+        }
+        onMapReady={() => setMapReady(true)}
         customMapStyle={mapStyle}
       >
         {origin && (
@@ -79,5 +95,3 @@ const mapStyle = [
   { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
   { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#eef1f6' }] },
 ];
-
-

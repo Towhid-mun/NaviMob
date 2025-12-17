@@ -42,20 +42,31 @@ export const HomeScreen = () => {
   };
 
   const filteredSuggestions = useMemo(() => {
-    const filtered = (history || [])
+    return (history || [])
       .filter((entry) => {
         if (!destinationAddress.trim()) return true;
         const label = (entry.address || entry.destination?.placeName || '').toLowerCase();
         return label.includes(destinationAddress.trim().toLowerCase());
       })
+      .map((entry) => {
+        const label = entry.address || entry.destination?.placeName || 'Saved destination';
+        return { label, value: label };
+      })
       .slice(0, 5);
-    console.debug('[history] suggestions for input', destinationAddress, filtered);
-    return filtered;
   }, [history, destinationAddress]);
 
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content}>
+        <DestinationSearch
+          value={destinationAddress}
+          onChangeText={setDestinationAddress}
+          onSubmit={handleNavigate}
+          isSubmitting={isSubmitting}
+          errorMessage={inputError}
+          suggestions={filteredSuggestions}
+        />
+
         <View style={styles.header}>
           <Text style={styles.title}>Where are we headed?</Text>
           <Text style={styles.subtitle}>Enter a destination to start navigation.</Text>
@@ -73,18 +84,6 @@ export const HomeScreen = () => {
           <RouteMap origin={origin} destination={null} coordinates={[]} />
           {error ? <Text style={styles.mapError}>{error}</Text> : null}
         </View>
-
-        <DestinationSearch
-          value={destinationAddress}
-          onChangeText={setDestinationAddress}
-          onSubmit={handleNavigate}
-          isSubmitting={isSubmitting}
-          errorMessage={inputError}
-          suggestions={filteredSuggestions}
-          onSelectSuggestion={(entry) =>
-            setDestinationAddress(entry.address || entry.destination?.placeName || '')
-          }
-        />
       </ScrollView>
     </View>
   );
@@ -122,4 +121,3 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 });
-

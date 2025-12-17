@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Dropdown } from 'react-native-element-dropdown';
 import { colors } from '../theme/colors';
 
 export const DestinationSearch = ({
@@ -16,20 +10,39 @@ export const DestinationSearch = ({
   isSubmitting,
   errorMessage,
   suggestions = [],
-  onSelectSuggestion,
 }) => (
   <View style={styles.container}>
-    <TextInput
-      style={styles.input}
-      placeholder="Enter destination"
-      placeholderTextColor={colors.textSecondary}
-      value={value}
-      onChangeText={onChangeText}
-      autoCorrect={false}
-      autoCapitalize="words"
-      returnKeyType="search"
-      onSubmitEditing={onSubmit}
-    />
+    <View style={styles.inputWrapper}>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter destination"
+        placeholderTextColor={colors.textSecondary}
+        value={value}
+        onChangeText={onChangeText}
+        autoCorrect={false}
+        autoCapitalize="words"
+        returnKeyType="search"
+        onSubmitEditing={onSubmit}
+      />
+    </View>
+
+    {suggestions.length > 0 && (
+      <Dropdown
+        data={suggestions}
+        labelField="label"
+        valueField="value"
+        placeholder="Recent destinations"
+        value={null}
+        style={styles.dropdown}
+        placeholderStyle={styles.dropdownPlaceholder}
+        selectedTextStyle={styles.dropdownSelected}
+        itemTextStyle={styles.dropdownItem}
+        containerStyle={styles.dropdownContainer}
+        maxHeight={200}
+        onChange={(item) => onChangeText(item.value)}
+      />
+    )}
+
     <Pressable
       accessibilityRole="button"
       disabled={!value?.trim() || isSubmitting}
@@ -46,44 +59,57 @@ export const DestinationSearch = ({
         <Text style={styles.buttonText}>Navigate To</Text>
       )}
     </Pressable>
+
     {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-    {suggestions.length > 0 && (
-      <View style={styles.suggestions}>
-        {suggestions.map((suggestion) => (
-          <Pressable
-            key={suggestion.id}
-            style={({ pressed }) => [styles.suggestionRow, pressed && styles.suggestionRowPressed]}
-            onPress={() => onSelectSuggestion?.(suggestion)}
-          >
-            <Text style={styles.suggestionText}>
-              {suggestion.address || suggestion.destination?.placeName}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    )}
   </View>
 );
 
 const styles = StyleSheet.create({
   container: {
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 10,
+    padding: 16,
     backgroundColor: colors.surface,
     borderRadius: 16,
   },
+  inputWrapper: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+  },
   input: {
-    flex: 1,
     color: colors.textPrimary,
     fontSize: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    backgroundColor: colors.background,
+  },
+  dropdownPlaceholder: {
+    color: colors.textSecondary,
+  },
+  dropdownSelected: {
+    color: colors.textPrimary,
+    fontSize: 15,
+  },
+  dropdownItem: {
+    color: colors.textPrimary,
+    paddingVertical: 10,
+  },
+  dropdownContainer: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   button: {
     backgroundColor: colors.accent,
+    borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: 12,
     alignSelf: 'flex-start',
   },
   buttonText: {
@@ -99,22 +125,5 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.danger,
     fontSize: 12,
-  },
-  suggestions: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  suggestionRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: colors.background,
-  },
-  suggestionRowPressed: {
-    backgroundColor: colors.surface,
-  },
-  suggestionText: {
-    color: colors.textPrimary,
   },
 });
