@@ -42,17 +42,25 @@ export const HomeScreen = () => {
   };
 
   const filteredSuggestions = useMemo(() => {
+    const query = destinationAddress.trim().toLowerCase();
+    if (!query) return [];
+
     return (history || [])
-      .filter((entry) => {
-        if (!destinationAddress.trim()) return true;
-        const label = (entry.address || entry.destination?.placeName || '').toLowerCase();
-        return label.includes(destinationAddress.trim().toLowerCase());
-      })
       .map((entry) => {
-        const label = entry.address || entry.destination?.placeName || 'Saved destination';
-        return { label, value: label };
+        const label = entry.address || entry.destination?.placeName || '';
+        const normalized = label.toLowerCase();
+        const score = normalized.startsWith(query)
+          ? 2
+          : normalized.includes(query)
+          ? 1
+          : 0;
+
+        return { label, value: label, score };
       })
-      .slice(0, 5);
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label))
+      .slice(0, 5)
+      .map(({ score, ...rest }) => rest);
   }, [history, destinationAddress]);
 
   return (
@@ -93,6 +101,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
+    marginTop:30,
   },
   content: {
     padding: 20,

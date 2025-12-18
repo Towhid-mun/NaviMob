@@ -12,36 +12,33 @@ export const DestinationSearch = ({
   suggestions = [],
 }) => (
   <View style={styles.container}>
-    <View style={styles.inputWrapper}>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter destination"
-        placeholderTextColor={colors.textSecondary}
-        value={value}
-        onChangeText={onChangeText}
-        autoCorrect={false}
-        autoCapitalize="words"
-        returnKeyType="search"
-        onSubmitEditing={onSubmit}
-      />
-    </View>
-
-    {suggestions.length > 0 && (
-      <Dropdown
-        data={suggestions}
-        labelField="label"
-        valueField="value"
-        placeholder="Recent destinations"
-        value={null}
-        style={styles.dropdown}
-        placeholderStyle={styles.dropdownPlaceholder}
-        selectedTextStyle={styles.dropdownSelected}
-        itemTextStyle={styles.dropdownItem}
-        containerStyle={styles.dropdownContainer}
-        maxHeight={200}
-        onChange={(item) => onChangeText(item.value)}
-      />
-    )}
+    <Dropdown
+      data={suggestions}
+      labelField="label"
+      valueField="value"
+      value={value}
+      search
+      renderInputSearch={() => (
+        <TextInput
+          style={styles.input}
+          placeholder="Enter destination"
+          placeholderTextColor={colors.textSecondary}
+          value={value}
+          onChangeText={onChangeText}
+          autoCorrect={false}
+          autoCapitalize="words"
+          returnKeyType="search"
+          onSubmitEditing={onSubmit}
+        />
+      )}
+      placeholder="Search destination"
+      style={styles.dropdown}
+      selectedTextStyle={styles.selectedText}
+      placeholderStyle={styles.placeholder}
+      containerStyle={styles.dropdownContainer}
+      itemTextStyle={styles.dropdownItemText}
+      onChange={(item) => onChangeText(item.value)}
+    />
 
     <Pressable
       accessibilityRole="button"
@@ -66,44 +63,39 @@ export const DestinationSearch = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10,
+    gap: 12,
     padding: 16,
     backgroundColor: colors.surface,
     borderRadius: 16,
-  },
-  inputWrapper: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-  },
-  input: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    paddingVertical: 10,
   },
   dropdown: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     backgroundColor: colors.background,
   },
-  dropdownPlaceholder: {
+  input: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  placeholder: {
     color: colors.textSecondary,
   },
-  dropdownSelected: {
+  selectedText: {
     color: colors.textPrimary,
-    fontSize: 15,
-  },
-  dropdownItem: {
-    color: colors.textPrimary,
-    paddingVertical: 10,
+    fontSize: 16,
   },
   dropdownContainer: {
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  dropdownItemText: {
+    color: colors.textPrimary,
   },
   button: {
     backgroundColor: colors.accent,

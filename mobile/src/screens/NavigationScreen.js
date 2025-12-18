@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { RouteMap } from '../components/RouteMap';
 import { RouteMetricsCard } from '../components/RouteMetricsCard';
@@ -11,6 +11,8 @@ import { colors } from '../theme/colors';
 import { useMutation } from '@tanstack/react-query';
 import { geocodeDestination } from '../services/apiClient';
 
+const TRIP_COMPLETION_DISTANCE_METERS = 30;
+
 export const NavigationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -21,6 +23,7 @@ export const NavigationScreen = () => {
   const [lastSubmittedAddress, setLastSubmittedAddress] = useState('');
   const [inputError, setInputError] = useState(null);
   const [activeRouteTarget, setActiveRouteTarget] = useState(null);
+  const [tripStatus, setTripStatus] = useState('idle');
 
   const {
     origin,
@@ -40,6 +43,14 @@ export const NavigationScreen = () => {
 
   const geocodeMutation = useMutation({ mutationFn: geocodeDestination });
 
+  const handleRouteError = (error) => {
+    const message = error?.response?.data?.message || error.message || 'Unable to calculate route.';
+    setInputError(message);
+    if (error?.response?.data?.code === 'InvalidInput') {
+      Alert.alert('Invalid destination', message, [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    }
+  };
+
   const {
     requestRoute,
     isFetching,
@@ -56,7 +67,17 @@ export const NavigationScreen = () => {
       }
       refreshHistory();
     },
+    onError: handleRouteError,
   });
+
+  const completeTrip = (message) => {
+    setTripStatus('completed');
+    Alert.alert('Trip completed', message, [{ text: 'OK' }]);
+  };
+
+  const handleStartTrip = () => setTripStatus('active');
+
+  const handleStopTrip = () => completeTrip('Trip stopped.');
 
   const startNavigation = async (address) => {
     if (!origin) {
@@ -68,6 +89,7 @@ export const NavigationScreen = () => {
 
     setInputError(null);
     setLastSubmittedAddress(trimmed);
+    setTripStatus('idle');
 
     try {
       const destination = await geocodeMutation.mutateAsync(trimmed);
@@ -77,6 +99,9 @@ export const NavigationScreen = () => {
     } catch (error) {
       const message = error?.response?.data?.message || error.message || 'Unable to geocode destination.';
       setInputError(message);
+      if (error?.response?.data?.code === 'InvalidInput') {
+        Alert.alert('Invalid destination', message, [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      }
     }
   };
 
@@ -102,16 +127,29 @@ export const NavigationScreen = () => {
     return () => clearInterval(intervalId);
   }, [origin, activeRouteTarget, requestRoute, isFetching]);
 
+  useEffect(() => {
+    if (tripStatus !== 'active') return;
+    const distance = data?.distance;
+    if (typeof distance === 'number' && distance <= TRIP_COMPLETION_DISTANCE_METERS) {
+      completeTrip('You arrived at your destination.');
+    }
+  }, [tripStatus, data]);
+
   const clearDestination = () => {
     setDestinationAddress('');
     setLastSubmittedAddress('');
     setInputError(null);
     setActiveRouteTarget(null);
     initialHandledRef.current = null;
+    setTripStatus('idle');
     reset();
   };
 
   const polylineCoordinates = useMemo(() => data?.polyline ?? [], [data]);
+
+  const showTripButton = Boolean(data?.distance) && tripStatus !== 'completed';
+  const tripButtonLabel = tripStatus === 'active' ? 'Stop Trip' : 'Start Trip';
+  const onTripButtonPress = tripStatus === 'active' ? handleStopTrip : handleStartTrip;
 
   return (
     <View style={styles.root}>
@@ -139,6 +177,18 @@ export const NavigationScreen = () => {
             coordinates={polylineCoordinates}
           />
         </View>
+
+        {showTripButton && (
+          <Pressable
+            onPress={onTripButtonPress}
+            style={({ pressed }) => [
+              styles.tripButton,
+              pressed && styles.tripButtonPressed,
+            ]}
+          >
+            <Text style={styles.tripButtonText}>{tripButtonLabel}</Text>
+          </Pressable>
+        )}
 
         <RouteMetricsCard
           distance={data?.distance}
@@ -209,8 +259,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     height: 500,
   },
+  tripButton: {
+    marginTop: 12,
+    alignSelf: 'center',
+    backgroundColor: colors.accent,
+    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  tripButtonPressed: {
+    opacity: 0.85,
+  },
+  tripButtonText: {
+    color: colors.background,
+    fontWeight: '700',
+    fontSize: 16,
+  },
   errorText: {
     color: colors.danger,
   },
 });
-
